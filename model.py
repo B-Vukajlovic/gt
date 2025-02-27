@@ -1,5 +1,4 @@
 import random
-import itertools
 
 COOPERATE = 'C'
 DEFECT = 'D'
@@ -87,6 +86,7 @@ def run_match(strategy_A, strategy_B, rounds, payoff_matrix=payoff_matrix):
         score_B += payoff_B
         history_A.append(move_A)
         history_B.append(move_B)
+
     return history_A, history_B, score_A, score_B
 
 def run_tournament(strategies, rounds_per_match):
@@ -131,7 +131,7 @@ def make_genetic_strategy(individual):
         return individual['rule_table'].get(key, COOPERATE)
     return strategy
 
-def evaluate_individual(individual, opponents, rounds=100):
+def evaluate_individual(individual, opponents, rounds):
     candidate = make_genetic_strategy(individual)
     total = 0
     for opp in opponents.values():
@@ -160,20 +160,24 @@ def mutate(individual, mutation_rate=0.05):
             individual['rule_table'][key] = DEFECT if current == COOPERATE else COOPERATE
     return individual
 
-def genetic_algorithm(opponents, population_size=20, num_generations=50, rounds=100, mutation_rate=0.05, survivor_fraction=0.5, elite_count=2):
+def genetic_algorithm(opponents, population_size, num_generations, rounds, mutation_rate, survivor_fraction, elite_count):
     population = [random_individual() for _ in range(population_size)]
     best_individual = None
     best_fitness = float('-inf')
+
     for generation in range(num_generations):
         fitnesses = [evaluate_individual(ind, opponents, rounds) for ind in population]
         gen_best = max(fitnesses)
+
         if gen_best > best_fitness:
             best_fitness = gen_best
             best_individual = population[fitnesses.index(gen_best)]
         print(f"Generation {generation}: Best Fitness = {gen_best}")
+
         survivor_count = int(population_size * survivor_fraction)
         survivors = select_survivors(population, fitnesses, survivor_count)
         new_population = survivors[:elite_count]
+
         while len(new_population) < population_size:
             parent1 = random.choice(survivors)
             parent2 = random.choice(survivors)
@@ -181,6 +185,7 @@ def genetic_algorithm(opponents, population_size=20, num_generations=50, rounds=
             child = mutate(child, mutation_rate)
             new_population.append(child)
         population = new_population
+
     return best_individual, best_fitness
 
 if __name__ == "__main__":
