@@ -102,6 +102,7 @@ def run_tournament(strategies, rounds_per_match):
             _, _, score_A, score_B = run_match(strat_A, strat_B, rounds_per_match)
             results[name_A] += score_A
             results[name_B] += score_B
+
     return results
 
 def all_combinations(n):
@@ -150,7 +151,7 @@ def crossover(parent1, parent2):
         child_rule_table[key] = parent1['rule_table'][key] if random.random() < 0.5 else parent2['rule_table'][key]
     return {"opening": child_opening, "rule_table": child_rule_table}
 
-def mutate(individual, mutation_rate=0.05):
+def mutate(individual, mutation_rate):
     individual['opening'] = [DEFECT if (move == COOPERATE and random.random() < mutation_rate)
                                else COOPERATE if (move == DEFECT and random.random() < mutation_rate)
                                else move for move in individual['opening']]
