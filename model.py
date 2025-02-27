@@ -156,9 +156,101 @@ def run_tournament(strategies, rounds_per_match):
 
     return results
 
-if __name__ == "__main__":
+def rule_table_to_strategy(rule_table):
+    def strategy(my_history, opponent_history):
+        if not my_history:
+            return rule_table[0]
+        last_self = my_history[-1]
+        last_opp = opponent_history[-1]
+        if last_self == COOPERATE and last_opp == COOPERATE:
+            index = 1
+        elif last_self == DEFECT and last_opp == DEFECT:
+            index = 2
+        elif last_self == COOPERATE and last_opp == DEFECT:
+            index = 3
+        elif last_self == DEFECT and last_opp == COOPERATE:
+            index = 4
+        else:
+            index = 1
+        return rule_table[index]
+    return strategy
 
-    strategies = {
+def random_rule_table():
+    return [random.choice([COOPERATE, DEFECT]) for _ in range(5)]
+
+def crossover(parent1, parent2):
+    # 3. Crossover:
+    # Combine the genes of two parent chromosomes at a random crossover point.
+    point = random.randint(1, len(parent1)-1)
+    child = parent1[:point] + parent2[point:]
+    return child
+
+def mutate(rule_table, mutation_rate):
+    # 4. Mutation:
+    # For each gene in the chromosome, flip its value with probability equal to mutation_rate.
+    new_rule_table = []
+    for gene in rule_table:
+        if random.random() < mutation_rate:
+            new_gene = COOPERATE if gene == DEFECT else DEFECT
+            new_rule_table.append(new_gene)
+        else:
+            new_rule_table.append(gene)
+    return new_rule_table
+
+def genetic_algorithm_evolve(baseline_strategies, population_size=20, generations=50, mutation_rate=0.1, rounds_per_match=100):
+    # 1. Initialization:
+    # Initialize a population of random chromosomes (rule tables).
+    population = [random_rule_table() for _ in range(population_size)]
+    
+    for gen in range(generations):
+        # 2. Selection:
+        # Evaluate the fitness of each chromosome by having the corresponding strategy play
+        # against each baseline strategy in a tournament. Fitness is the total accumulated score.
+        fitnesses = []
+        for rule_table in population:
+            strategy = rule_table_to_strategy(rule_table)
+            total_score = 0
+            for name, baseline_strategy in baseline_strategies.items():
+                _, _, score, _ = run_match(strategy, baseline_strategy, rounds=rounds_per_match)
+                total_score += score
+            fitnesses.append(total_score)
+        
+        # Sort population by fitness in descending order.
+        sorted_population = [x for _, x in sorted(zip(fitnesses, population), key=lambda pair: pair[0], reverse=True)]
+        population = sorted_population
+        
+        best_fitness = max(fitnesses)
+        print(f"Generation {gen}, best fitness: {best_fitness}")
+        
+        # 5. Perform Selection and iterate:
+        # Create a new population using elitism and genetic operators (crossover and mutation).
+        new_population = []
+        elite_count = 2  # Retain top individuals (elitism)
+        new_population.extend(population[:elite_count])
+        while len(new_population) < population_size:
+            parent1 = random.choice(population[:population_size//2])
+            parent2 = random.choice(population[:population_size//2])
+            child = crossover(parent1, parent2)
+            child = mutate(child, mutation_rate)
+            new_population.append(child)
+        population = new_population
+    
+    # Final evaluation: pick the best chromosome from the final population.
+    fitnesses = []
+    for rule_table in population:
+        strategy = rule_table_to_strategy(rule_table)
+        total_score = 0
+        for name, baseline_strategy in baseline_strategies.items():
+            _, _, score, _ = run_match(strategy, baseline_strategy, rounds=rounds_per_match)
+            total_score += score
+        fitnesses.append(total_score)
+    best_index = fitnesses.index(max(fitnesses))
+    best_rule_table = population[best_index]
+    return best_rule_table
+
+if __name__ == "__main__":
+    # Define the 10 baseline strategies.
+    baseline_strategies = {
         "Always Cooperate": always_cooperate,
         "Always Defect": always_defect,
         "Tit for Tat": tit_for_tat,
@@ -168,12 +260,28 @@ if __name__ == "__main__":
         "Generous Tit-for-Tat": generous_tit_for_tat,
         "Double Alternator": double_alternator,
         "Prober": prober,
-        "Adaptive Ratio": adaptive_ratio
+        "Adaptive Strategy": adaptive_ratio
     }
-
+    
     rounds_per_match = 100
-    tournament_results = run_tournament(strategies, rounds_per_match)
 
-    print("Tournament Results (Total Scores):")
+    # Run a tournament with the baseline strategies.
+    tournament_results = run_tournament(baseline_strategies, rounds_per_match)
+    print("Baseline Tournament Results (Total Scores):")
+    for name, score in tournament_results.items():
+        print(f"{name}: {score}")
+    
+    # Evolve a new strategy using the genetic algorithm.
+    print("\nEvolving new strategy using genetic algorithm...")
+    best_rule_table = genetic_algorithm_evolve(baseline_strategies, population_size=20, generations=50, mutation_rate=0.1, rounds_per_match=rounds_per_match)
+    print("\nBest evolved rule table:", best_rule_table)
+    
+    # Convert the best rule table to a strategy function.
+    evolved_strategy = rule_table_to_strategy(best_rule_table)
+    
+    # Add the evolved strategy to the baseline and run a new tournament.
+    baseline_strategies["Evolved Strategy"] = evolved_strategy
+    tournament_results = run_tournament(baseline_strategies, rounds_per_match)
+    print("\nTournament Results Including Evolved Strategy (Total Scores):")
     for name, score in tournament_results.items():
         print(f"{name}: {score}")
