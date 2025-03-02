@@ -236,12 +236,20 @@ def genetic_algorithm(opponents, population_size, num_generations, rounds, mutat
 
     for generation in range(num_generations):
         fitnesses = [evaluate_individual(ind, opponents, rounds) for ind in population]
-        gen_best = max(fitnesses)
 
-        if gen_best > best_fitness:
-            best_fitness = gen_best
-            best_individual = population[fitnesses.index(gen_best)]
-        print(f"Generation {generation}: Best Fitness = {gen_best}")
+        gen_best_fitness = float('-inf')
+        gen_best_individual = None
+
+        for i in range(population_size):
+            if fitnesses[i] > gen_best_fitness:
+                gen_best_fitness = fitnesses[i]
+                gen_best_individual = population[i]
+
+        if gen_best_fitness > best_fitness:
+            best_fitness = gen_best_fitness
+            best_individual = gen_best_individual
+
+        print(f"Generation {generation}: Best Fitness = {gen_best_fitness}")
 
         survivor_count = int(population_size * survivor_fraction)
         survivors = select_survivors(population, fitnesses, survivor_count)
