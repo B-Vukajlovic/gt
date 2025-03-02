@@ -131,7 +131,7 @@ def random_individual():
     return {"opening": opening, "rule_table": rule_table}
 
 
-# .get ? and why look at last 3 moves, cant we put the rule table and the opening together in one dictioary?
+# why look at last 3 moves, cant we put the rule table and the opening together in one dictioary?
 def make_genetic_strategy(individual):
     # Return this function
     def strategy(my_history, opponent_history):
