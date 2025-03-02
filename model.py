@@ -90,7 +90,11 @@ def run_match(strategy_A, strategy_B, rounds, payoff_matrix=payoff_matrix):
     return history_A, history_B, score_A, score_B
 
 def run_tournament(strategies, rounds_per_match):
-    results = {name: 0 for name in strategies}
+    results = {}
+
+    for name in strategies:
+        results[name] = 0
+
     strategy_names = list(strategies.keys())
 
     for i in range(len(strategy_names)):
@@ -104,6 +108,8 @@ def run_tournament(strategies, rounds_per_match):
             results[name_B] += score_B
     return results
 
+
+# I do not understand this - "Simon"
 def all_combinations(n):
     combos = []
     for i in range(2 ** n):
@@ -113,6 +119,7 @@ def all_combinations(n):
         combos.append(tuple(combo))
     return combos
 
+# why look at only last 3 moves
 def random_individual():
     opening = [random.choice([COOPERATE, DEFECT]) for _ in range(3)]
     rule_table = {}
@@ -123,12 +130,24 @@ def random_individual():
             rule_table[(self_moves, opp_moves)] = random.choice([COOPERATE, DEFECT])
     return {"opening": opening, "rule_table": rule_table}
 
+
+# .get ? and why look at last 3 moves, cant we put the rule table and the opening together in one dictioary?
 def make_genetic_strategy(individual):
+    # Return this function
     def strategy(my_history, opponent_history):
         if len(my_history) < 3:
             return individual['opening'][len(my_history)]
-        key = (tuple(my_history[-3:]), tuple(opponent_history[-3:]))
-        return individual['rule_table'].get(key, COOPERATE)
+
+        # extract last 3 moves from both players
+        my_last_moves = (my_history[-3], my_history[-2], my_history[-1])
+        opponent_last_moves = (opponent_history[-3], opponent_history[-2], opponent_history[-1])
+
+        # look up next move in rule table
+        if (my_last_moves, opponent_last_moves) in individual['rule_table']:
+            return individual['rule_table'][(my_last_moves, opponent_last_moves)]
+        else:
+            return COOPERATE  # if not in rule table for some reason just return cooperate
+
     return strategy
 
 def evaluate_individual(individual, opponents, rounds):
@@ -140,24 +159,74 @@ def evaluate_individual(individual, opponents, rounds):
     return total
 
 def select_survivors(population, fitnesses, survivor_count):
-    sorted_pop = [ind for _, ind in sorted(zip(fitnesses, population), key=lambda x: x[0], reverse=True)]
-    return sorted_pop[:survivor_count]
+    paired_list = []
+
+    for i in range(len(population)):
+        paired_list.append((fitnesses[i], population[i]))
+
+    paired_list.sort(reverse=True, key=lambda pair: pair[0])
+
+    survivors = []
+    for i in range(survivor_count):
+        survivors.append(paired_list[i][1])
+
+    return survivors
+
 
 def crossover(parent1, parent2):
-    child_opening = [parent1['opening'][i] if random.random() < 0.5 else parent2['opening'][i] for i in range(3)]
+    # child_opening = [parent1['opening'][i] if random.random() < 0.5 else parent2['opening'][i] for i in range(3)]
+    # child_rule_table = {}
+    # for key in parent1['rule_table']:
+    #     child_rule_table[key] = parent1['rule_table'][key] if random.random() < 0.5 else parent2['rule_table'][key]
+    # return {"opening": child_opening, "rule_table": child_rule_table}
+
+    child_opening = []
+
+    for i in range(3):
+        move = random.choice([parent1['opening'][i], parent2['opening'][i]])
+        child_opening.append(move)
+
     child_rule_table = {}
-    for key in parent1['rule_table']:
-        child_rule_table[key] = parent1['rule_table'][key] if random.random() < 0.5 else parent2['rule_table'][key]
+
+    for move_history in parent1['rule_table']:
+        parent1_choice = parent1['rule_table'][move_history]
+        parent2_choice = parent2['rule_table'][move_history]
+
+        child_rule = random.choice([parent1_choice, parent2_choice])
+
+        child_rule_table[move_history] = child_rule
+
     return {"opening": child_opening, "rule_table": child_rule_table}
 
+
 def mutate(individual, mutation_rate=0.05):
-    individual['opening'] = [DEFECT if (move == COOPERATE and random.random() < mutation_rate)
-                               else COOPERATE if (move == DEFECT and random.random() < mutation_rate)
-                               else move for move in individual['opening']]
+    # individual['opening'] = [DEFECT if (move == COOPERATE and random.random() < mutation_rate)
+    #                            else COOPERATE if (move == DEFECT and random.random() < mutation_rate)
+    #                            else move for move in individual['opening']]
+    # for key in individual['rule_table']:
+    #     if random.random() < mutation_rate:
+    #         current = individual['rule_table'][key]
+    #         individual['rule_table'][key] = DEFECT if current == COOPERATE else COOPERATE
+    # return individual
+
+
+    new_opening = []
+
+    for move in individual['opening']:
+        if move == COOPERATE and random.random() < mutation_rate:
+            new_opening.append(DEFECT)
+        elif move == DEFECT and random.random() < mutation_rate:
+            new_opening.append(COOPERATE)
+        else:
+            new_opening.append(move)
+
+    individual['opening'] = new_opening
+
     for key in individual['rule_table']:
         if random.random() < mutation_rate:
             current = individual['rule_table'][key]
             individual['rule_table'][key] = DEFECT if current == COOPERATE else COOPERATE
+
     return individual
 
 def genetic_algorithm(opponents, population_size, num_generations, rounds, mutation_rate, survivor_fraction, elite_count):
