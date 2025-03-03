@@ -31,13 +31,13 @@ def random_individual():
     rule_table = {}
 
     # Generate all possible histories for self and opponent
-    self_combos = all_combinations(3)
-    opp_combos = all_combinations(3)
+    my_combinations = all_combinations(3)
+    opponent_combinations = all_combinations(3)
 
     # Assign a random response for each combination of history
-    for self_moves in self_combos:
-        for opp_moves in opp_combos:
-            rule_table[(self_moves, opp_moves)] = random.choice([COOPERATE, DEFECT])
+    for my_moves in my_combinations:
+        for opponent_moves in opponent_combinations:
+            rule_table[(my_moves, opponent_moves)] = random.choice([COOPERATE, DEFECT])
 
     return {"opening": opening, "rule_table": rule_table}
 
@@ -66,53 +66,53 @@ def make_genetic_strategy(individual):
 def evaluate_individual(individual, opponents, rounds):
     # Play against each opponent that was passed along with this function
     # and calculate the total payoff
-    candidate = make_genetic_strategy(individual)
+    individual = make_genetic_strategy(individual)
     total = 0
 
-    for opp in opponents.values():
-        _, _, score, _ = run_match(candidate, opp, rounds)
+    for opponent in opponents.values():
+        _, _, score, _ = run_match(individual, opponent, rounds)
         total += score
     return total
 
 
 # Select survivors based on fitness
 def select_survivors(population, fitnesses, survivor_count):
-    paired_list = []
+    pairs = []
 
     # Pair each strategy with its fitness
     for i in range(len(population)):
-        paired_list.append((fitnesses[i], population[i]))
+        pairs.append((fitnesses[i], population[i]))
 
     # Sort the list with pairs based on fitness
-    paired_list.sort(reverse=True, key=lambda pair: pair[0])
+    pairs.sort(reverse=True, key=lambda pair: pair[0])
 
     survivors = []
     for i in range(survivor_count):
-        survivors.append(paired_list[i][1])
+        survivors.append(pairs[i][1])
 
     return survivors
 
 
 # Does crossover between two parents and then creates a new child
 def crossover(parent1, parent2):
-    child_opening = []
+    new_opening = []
     # Create new opening sequence by randomly picking from parents
     for i in range(3):
         move = random.choice([parent1['opening'][i], parent2['opening'][i]])
-        child_opening.append(move)
+        new_opening.append(move)
 
 
-    child_rule_table = {}
+    new_rule_table = {}
     # Create new rule table by randomly picking rules from parents
     for move_history in parent1['rule_table']:
-        parent1_choice = parent1['rule_table'][move_history]
-        parent2_choice = parent2['rule_table'][move_history]
+        parent1_move = parent1['rule_table'][move_history]
+        parent2_move = parent2['rule_table'][move_history]
 
-        child_rule = random.choice([parent1_choice, parent2_choice])
+        child_move = random.choice([parent1_move, parent2_move])
 
-        child_rule_table[move_history] = child_rule
+        new_rule_table[move_history] = child_move
 
-    return {"opening": child_opening, "rule_table": child_rule_table}
+    return {"opening": new_opening, "rule_table": new_rule_table}
 
 
 # Mutates a strategy by the given mutation rate
@@ -176,14 +176,14 @@ def genetic_algorithm(opponents, population_size, num_generations, rounds, mutat
 
     # Run the genetic algorithm for 'num_generations' generations
     for generation in range(num_generations):
-        population, gen_best_individual, gen_best_fitness = genetic_algorithm_step(
+        population, current_best_individual, current_best_fitness = genetic_algorithm_step(
             population, opponents, rounds, mutation_rate, survivor_fraction, elite_count)
 
         # Update best fitness if the best fitness of the latest generation
         # is greater than previous best fitnesses
-        if gen_best_fitness > best_fitness:
-            best_fitness = gen_best_fitness
-            best_individual = gen_best_individual
+        if current_best_fitness > best_fitness:
+            best_fitness = current_best_fitness
+            best_individual = current_best_individual
 
-        print(f"Generation {generation}: Best Fitness = {gen_best_fitness}")
+        print(f"Generation {generation}: Best Fitness = {current_best_fitness}")
     return best_individual, best_fitness
