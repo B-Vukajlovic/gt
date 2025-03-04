@@ -6,19 +6,17 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
 from pyics import Model, GUI
-
-from ipd_simulation.strategies import non_genetic_strategies
+from ipd_simulation.strategies import non_genetic_strategies, COOPERATE, DEFECT, payoff_matrix
 from ipd_simulation.match_tournament import run_match, run_tournament
-from ipd_simulation.genetic_backend import *
+from ipd_simulation.genetic_backend import genetic_algorithm, genetic_algorithm_step, make_genetic_strategy, random_individual, crossover, mutate, evaluate_individual, select_survivors
 
 class IPDSimulation(Model):
     def __init__(self):
         Model.__init__(self)
         self.make_param('mode', 'Tournament', str)
-        self.make_param('rounds_per_match', 50, int)
+        self.make_param('rounds_per_match', 200, int)
         self.make_param('population_size', 100, int)
         self.make_param('num_generations', 50, int)
-        self.make_param('rounds', 200, int)
         self.make_param('mutation_rate', 0.1, float)
         self.make_param('survivor_fraction', 0.7, float)
         self.make_param('elite_count', 10, int)
@@ -40,6 +38,11 @@ class IPDSimulation(Model):
         self.non_genetic_strategies = non_genetic_strategies
 
     def reset(self):
+        if hasattr(self, 'gui') and self.gui is not None:
+            new_matrix = self.gui.get_payoff_matrix()
+            payoff_matrix.clear()
+            payoff_matrix.update(new_matrix)
+
         self.current_generation = 0
         self.gens = []
         self.max_fitnesses = []
@@ -78,11 +81,10 @@ class IPDSimulation(Model):
                 self.phase = "genetic_phase"
                 return False
             elif self.phase == "genetic_phase":
-                from ipd_simulation.genetic_backend import genetic_algorithm_step
                 population, gen_best_individual, gen_best_fitness = genetic_algorithm_step(
                     self.population,
                     self.non_genetic_strategies,
-                    self.rounds,
+                    self.rounds_per_match,
                     self.mutation_rate,
                     self.survivor_fraction,
                     self.elite_count
@@ -136,7 +138,7 @@ class IPDSimulation(Model):
                         opponents,
                         self.population_size,
                         self.num_generations,
-                        self.rounds,
+                        self.rounds_per_match,
                         self.mutation_rate,
                         self.survivor_fraction,
                         self.elite_count)
@@ -150,7 +152,7 @@ class IPDSimulation(Model):
                         opponents,
                         self.population_size,
                         self.num_generations,
-                        self.rounds,
+                        self.rounds_per_match,
                         self.mutation_rate,
                         self.survivor_fraction,
                         self.elite_count)
@@ -190,6 +192,31 @@ class IPDGUI(GUI):
     def initGUI(self):
         super().initGUI()
         self.rootWindow.geometry("800x900")
+
+        self.payoff_frame = Frame(self.rootWindow, bd=2, relief="groove")
+        self.payoff_frame.pack(side=TOP, fill="x", padx=5, pady=5)
+        Label(self.payoff_frame, text="Payoff Matrix Editor").grid(row=0, column=0, columnspan=3)
+        Label(self.payoff_frame, text="Outcome").grid(row=1, column=0, padx=5, pady=2)
+        Label(self.payoff_frame, text="Player A Payoff").grid(row=1, column=1, padx=5, pady=2)
+        Label(self.payoff_frame, text="Player B Payoff").grid(row=1, column=2, padx=5, pady=2)
+        self.outcomes = [
+            ("(C,C)", (COOPERATE, COOPERATE)),
+            ("(C,D)", (COOPERATE, DEFECT)),
+            ("(D,C)", (DEFECT, COOPERATE)),
+            ("(D,D)", (DEFECT, DEFECT))
+        ]
+        self.payoff_entries = {}
+        for i, (label_text, outcome) in enumerate(self.outcomes, start=2):
+            Label(self.payoff_frame, text=label_text).grid(row=i, column=0, padx=5, pady=2)
+            entry_a = Entry(self.payoff_frame, width=5)
+            entry_a.grid(row=i, column=1, padx=5, pady=2)
+            entry_b = Entry(self.payoff_frame, width=5)
+            entry_b.grid(row=i, column=2, padx=5, pady=2)
+            a_val, b_val = payoff_matrix[outcome]
+            entry_a.insert(0, str(a_val))
+            entry_b.insert(0, str(b_val))
+            self.payoff_entries[outcome] = (entry_a, entry_b)
+
         self.terminal_frame = Frame(self.rootWindow, height=300, bd=2, relief="sunken")
         self.terminal_frame.pack(side=BOTTOM, fill="x")
         self.terminal_text = Text(self.terminal_frame, height=15, wrap=WORD)
@@ -198,6 +225,26 @@ class IPDGUI(GUI):
         self.terminal_scroll.pack(side=RIGHT, fill=Y)
         self.terminal_text.config(yscrollcommand=self.terminal_scroll.set)
         self.terminal_text.insert(END, "Terminal Output:\n")
+
+    def get_payoff_matrix(self):
+        new_matrix = {}
+        for outcome, (entry_a, entry_b) in self.payoff_entries.items():
+            try:
+                a_val = int(entry_a.get())
+                b_val = int(entry_b.get())
+            except ValueError:
+                a_val, b_val = 0, 0
+            new_matrix[outcome] = (a_val, b_val)
+        return new_matrix
+
+    def set_payoff_matrix(self, matrix):
+        for outcome, (entry_a, entry_b) in self.payoff_entries.items():
+            if outcome in matrix:
+                a_val, b_val = matrix[outcome]
+                entry_a.delete(0, END)
+                entry_a.insert(0, str(a_val))
+                entry_b.delete(0, END)
+                entry_b.insert(0, str(b_val))
 
     def append_terminal(self, message):
         self.terminal_text.insert(END, message + "\n")

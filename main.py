@@ -2,7 +2,7 @@
 
 init_params = {
     "mode": "Tournament",
-    "rounds_per_match": 50,
+    "rounds_per_match": 300,
     "population_size": 100,
     "num_generations": 50,
     "rounds": 200,
