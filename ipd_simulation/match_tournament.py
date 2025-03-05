@@ -1,5 +1,10 @@
-# ipd_simulation/match_tournament.py
-
+"""
+Naam: Simon Plas, Boris Vukaljovic
+UvAID: 15249514, 15225054
+Description:
+Implements match and tournament functions for the Iterated Prisoner's Dilemma,
+allowing strategies to compete in regular matches and tournaments.
+"""
 from ipd_simulation.strategies import payoff_matrix
 
 

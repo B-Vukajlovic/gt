@@ -1,18 +1,25 @@
-# ipd_simulation/simulation_gui.py
-
-from tkinter import *
+"""
+Naam: Simon Plas, Boris Vukaljovic
+UvAID: 15249514, 15225054
+Description:
+Implements the Iterated Prisoner's Dilemma simulation, including a GUI for
+configuring and visualizing the tournament.
+"""
 import matplotlib
-matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
-
 from pyics import Model, GUI
 from ipd_simulation.strategies import non_genetic_strategies, COOPERATE, DEFECT, payoff_matrix
 from ipd_simulation.match_tournament import run_match, run_tournament
-from ipd_simulation.genetic_backend import genetic_algorithm, genetic_algorithm_step, make_genetic_strategy, random_individual, crossover, mutate, evaluate_individual, select_survivors
+from ipd_simulation.genetic_backend import genetic_algorithm, genetic_algorithm_step, make_genetic_strategy, random_individual
+from tkinter import *
+matplotlib.use('TkAgg')
+
 
 class IPDSimulation(Model):
     def __init__(self):
         Model.__init__(self)
+
+        # Simulation parameters
         self.make_param('mode', 'Tournament', str)
         self.make_param('rounds_per_match', 200, int)
         self.make_param('population_size', 100, int)
@@ -20,9 +27,11 @@ class IPDSimulation(Model):
         self.make_param('mutation_rate', 0.1, float)
         self.make_param('survivor_fraction', 0.7, float)
 
+        # Strategies for non-genetic match
         self.make_param('strategy_A', 'Tit for Tat', str)
         self.make_param('strategy_B', 'Always Defect', str)
 
+        # Initialize variables
         self.phase = None
         self.current_generation = 0
         self.population = None
@@ -37,22 +46,26 @@ class IPDSimulation(Model):
         self.non_genetic_strategies = non_genetic_strategies
 
     def reset(self):
+        # Update the payoff matrix if GUI is available
         if hasattr(self, 'gui') and self.gui is not None:
             new_matrix = self.gui.get_payoff_matrix()
             payoff_matrix.clear()
             payoff_matrix.update(new_matrix)
 
+        # Reset variables
         self.current_generation = 0
         self.gens = []
         self.max_fitnesses = []
         self.log = ""
         self.finished = False
 
+        # Validate mode selection
         if self.mode not in ("Tournament", "Match"):
             self.phase = "error"
             self.append_log("ERROR: Invalid mode value '" + str(self.mode) + "'. Use 'Tournament' or 'Match'.")
             return
 
+        # Initialize simulation based on mode
         if self.mode == "Tournament":
             self.phase = "genetic_phase"
             self.population = [random_individual() for _ in range(self.population_size)]
@@ -61,6 +74,8 @@ class IPDSimulation(Model):
 
         self.best_individual = None
         self.best_fitness = None
+
+        # Clear GUI terminal if available
         if hasattr(self, 'gui') and self.gui is not None:
             self.gui.clear_terminal()
         self.append_log("Simulation reset. Mode: " + self.mode)
@@ -70,6 +85,7 @@ class IPDSimulation(Model):
             return True
 
         if self.mode == "Tournament":
+            # Handle genetic algorithm steps
             if self.phase == "initial_tournament":
                 self.append_log("Running initial tournament among non-genetic strategies...")
                 results = run_tournament(self.non_genetic_strategies, self.rounds_per_match)
@@ -114,6 +130,7 @@ class IPDSimulation(Model):
 
         elif self.mode == "Match":
             if self.phase == "match":
+                # Validate selected strategies
                 valid_strategies = list(self.non_genetic_strategies.keys()) + ["Genetic Strategy"]
                 strat_A_name = self.strategy_A
                 strat_B_name = self.strategy_B
@@ -130,10 +147,11 @@ class IPDSimulation(Model):
                     self.phase = "error"
                     return True
 
+                # Run match and log results
                 strategies_for_match = self.non_genetic_strategies.copy()
                 if strat_A_name == "Genetic Strategy":
                     self.append_log("Evolving Genetic Strategy for match against " + strat_B_name + "...")
-                    opponents = { strat_B_name: strategies_for_match[strat_B_name] }
+                    opponents = {strat_B_name: strategies_for_match[strat_B_name]}
                     best_ind, best_fit = genetic_algorithm(
                             opponents,
                             self.population_size,
@@ -147,7 +165,7 @@ class IPDSimulation(Model):
                     self.append_log(f"Evolved Genetic Strategy with fitness {best_fit}")
                 elif strat_B_name == "Genetic Strategy":
                     self.append_log("Evolving Genetic Strategy for match against " + strat_A_name + "...")
-                    opponents = { strat_A_name: strategies_for_match[strat_A_name] }
+                    opponents = {strat_A_name: strategies_for_match[strat_A_name]}
                     best_ind, best_fit = genetic_algorithm(
                             opponents,
                             self.population_size,
@@ -188,17 +206,21 @@ class IPDSimulation(Model):
         if hasattr(self, 'gui') and self.gui is not None:
             self.gui.append_terminal(message)
 
+
 class IPDGUI(GUI):
     def initGUI(self):
         super().initGUI()
         self.rootWindow.geometry("800x900")
 
+        # Payoff matrix editor section
         self.payoff_frame = Frame(self.rootWindow, bd=2, relief="groove")
         self.payoff_frame.pack(side=TOP, fill="x", padx=5, pady=5)
         Label(self.payoff_frame, text="Payoff Matrix Editor").grid(row=0, column=0, columnspan=3)
         Label(self.payoff_frame, text="Outcome").grid(row=1, column=0, padx=5, pady=2)
         Label(self.payoff_frame, text="Player A Payoff").grid(row=1, column=1, padx=5, pady=2)
         Label(self.payoff_frame, text="Player B Payoff").grid(row=1, column=2, padx=5, pady=2)
+
+        # Define outcomes for the payoff matrix
         self.outcomes = [
             ("(C,C)", (COOPERATE, COOPERATE)),
             ("(C,D)", (COOPERATE, DEFECT)),
@@ -206,6 +228,8 @@ class IPDGUI(GUI):
             ("(D,D)", (DEFECT, DEFECT))
         ]
         self.payoff_entries = {}
+
+        # Create input fields for payoff values
         for i, (label_text, outcome) in enumerate(self.outcomes, start=2):
             Label(self.payoff_frame, text=label_text).grid(row=i, column=0, padx=5, pady=2)
             entry_a = Entry(self.payoff_frame, width=5)

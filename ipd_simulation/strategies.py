@@ -1,5 +1,10 @@
-# ipd_simulation/strategies.py
-
+"""
+Naam: Simon Plas, Boris Vukaljovic
+UvAID: 15249514, 15225054
+Description:
+Defines various non-genetic strategies for the Iterated Prisoner's Dilemma,
+including Tit-For-Tat, random, adaptive and other strategies.
+"""
 import random
 
 COOPERATE = 'C'
@@ -99,6 +104,7 @@ def adaptive_ratio(my_history, opponent_history):
         return COOPERATE
     cooperation_ratio = recent.count(COOPERATE) / len(recent)
     return COOPERATE if cooperation_ratio >= 0.6 else DEFECT
+
 
 non_genetic_strategies = {
     "Always Cooperate": always_cooperate,

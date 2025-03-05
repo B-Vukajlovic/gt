@@ -1,5 +1,10 @@
-# In ipd_simulation/genetic_backend.py
-
+"""
+Naam: Simon Plas, Boris Vukaljovic
+UvAID: 15249514, 15225054
+Description:
+Implements the genetic algorithm for evolving strategies, with the means of
+mutation, crossover, and selection mechanisms.
+"""
 import random
 from ipd_simulation.strategies import COOPERATE, DEFECT
 from ipd_simulation.match_tournament import run_match
@@ -99,7 +104,6 @@ def crossover(parent1, parent2):
     for i in range(3):
         move = random.choice([parent1['opening'][i], parent2['opening'][i]])
         new_opening.append(move)
-
 
     new_rule_table = {}
     # Create new rule table by randomly picking rules from parents
