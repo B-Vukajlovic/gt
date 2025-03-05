@@ -55,7 +55,7 @@ def run_simulation():
     else:
         return 0
 
-
+# Function that actually runs the experiment
 def main():
     # Define mutation rates and survivor fractions for experiments
     mutation_rates = [0.01, 0.025, 0.05, 0.075, 0.1]

@@ -16,7 +16,16 @@ matplotlib.use('TkAgg')
 
 
 class IPDSimulation(Model):
+    """
+    The main simulation class for running the Iterated Prisoner's Dilemma.
+
+    Two modes:
+    1. Tournament: Multiple strategies compete over multiple generations.
+    2. Match: A one-on-one match between two strategies.
+    """
+
     def __init__(self):
+        """Initializes the simulation parameters, strategies, and variables."""
         Model.__init__(self)
 
         # Simulation parameters
@@ -46,6 +55,7 @@ class IPDSimulation(Model):
         self.non_genetic_strategies = non_genetic_strategies
 
     def reset(self):
+        """Resets the simulation"""
         # Update the payoff matrix if GUI is available
         if hasattr(self, 'gui') and self.gui is not None:
             new_matrix = self.gui.get_payoff_matrix()
@@ -62,7 +72,7 @@ class IPDSimulation(Model):
         # Validate mode selection
         if self.mode not in ("Tournament", "Match"):
             self.phase = "error"
-            self.append_log("ERROR: Invalid mode value '" + str(self.mode) + "'. Use 'Tournament' or 'Match'.")
+            self.append_log("Invalid mode value '" + str(self.mode) + "'. Use 'Tournament' or 'Match'.")
             return
 
         # Initialize simulation based on mode
@@ -81,6 +91,7 @@ class IPDSimulation(Model):
         self.append_log("Simulation reset. Mode: " + self.mode)
 
     def step(self):
+        """Executes a single step in the simulation"""
         if self.phase == "error":
             return True
 
@@ -135,15 +146,15 @@ class IPDSimulation(Model):
                 strat_A_name = self.strategy_A
                 strat_B_name = self.strategy_B
                 if strat_A_name not in valid_strategies:
-                    self.append_log(f"ERROR: Strategy A '{strat_A_name}' is invalid. Valid options: {valid_strategies}")
+                    self.append_log(f"Strategy A '{strat_A_name}' is invalid. Valid options: {valid_strategies}")
                     self.phase = "error"
                     return True
                 if strat_B_name not in valid_strategies:
-                    self.append_log(f"ERROR: Strategy B '{strat_B_name}' is invalid. Valid options: {valid_strategies}")
+                    self.append_log(f"Strategy B '{strat_B_name}' is invalid. Valid options: {valid_strategies}")
                     self.phase = "error"
                     return True
                 if strat_A_name == "Genetic Strategy" and strat_B_name == "Genetic Strategy":
-                    self.append_log("ERROR: Both strategies cannot be 'Genetic Strategy'.")
+                    self.append_log("Both strategies cannot be 'Genetic Strategy'.")
                     self.phase = "error"
                     return True
 
@@ -191,6 +202,7 @@ class IPDSimulation(Model):
         return True
 
     def draw(self):
+        """Updates the GUI by plotting the evolution of the genetic algorithm"""
         if self.mode == "Tournament" and self.phase in ["genetic_phase", "final_tournament", "finished"]:
             plt.clf()
             plt.plot(self.gens, self.max_fitnesses)
@@ -199,7 +211,7 @@ class IPDSimulation(Model):
             plt.title("Genetic Algorithm Evolution")
             plt.draw()
         if hasattr(self, 'gui') and self.gui is not None:
-            self.gui.update_terminal(self.log)
+            pass
 
     def append_log(self, message):
         self.log += message + "\n"
@@ -208,17 +220,24 @@ class IPDSimulation(Model):
 
 
 class IPDGUI(GUI):
+    """
+    GUI for the simulation.
+
+    Includes: payoff matrix editor, real time logs and results, editing parameters
+    choose certain strategies to use
+    """
     def initGUI(self):
+        """Initializes the GUI components"""
         super().initGUI()
         self.rootWindow.geometry("800x900")
 
         # Payoff matrix editor section
         self.payoff_frame = Frame(self.rootWindow, bd=2, relief="groove")
         self.payoff_frame.pack(side=TOP, fill="x", padx=5, pady=5)
-        Label(self.payoff_frame, text="Payoff Matrix Editor").grid(row=0, column=0, columnspan=3)
+        Label(self.payoff_frame, text="Payof matrix editor").grid(row=0, column=0, columnspan=3)
         Label(self.payoff_frame, text="Outcome").grid(row=1, column=0, padx=5, pady=2)
-        Label(self.payoff_frame, text="Player A Payoff").grid(row=1, column=1, padx=5, pady=2)
-        Label(self.payoff_frame, text="Player B Payoff").grid(row=1, column=2, padx=5, pady=2)
+        Label(self.payoff_frame, text="Player A payoff").grid(row=1, column=1, padx=5, pady=2)
+        Label(self.payoff_frame, text="Player B payoff").grid(row=1, column=2, padx=5, pady=2)
 
         # Define outcomes for the payoff matrix
         self.outcomes = [
@@ -241,6 +260,7 @@ class IPDGUI(GUI):
             entry_b.insert(0, str(b_val))
             self.payoff_entries[outcome] = (entry_a, entry_b)
 
+        # Configures the terminal, for the logs and match/tournament results
         self.terminal_frame = Frame(self.rootWindow, height=300, bd=2, relief="sunken")
         self.terminal_frame.pack(side=BOTTOM, fill="x")
         self.terminal_text = Text(self.terminal_frame, height=15, wrap=WORD)
@@ -248,9 +268,10 @@ class IPDGUI(GUI):
         self.terminal_scroll = Scrollbar(self.terminal_frame, command=self.terminal_text.yview)
         self.terminal_scroll.pack(side=RIGHT, fill=Y)
         self.terminal_text.config(yscrollcommand=self.terminal_scroll.set)
-        self.terminal_text.insert(END, "Terminal Output:\n")
+        self.terminal_text.insert(END, "Terminla Output:\n")
 
     def get_payoff_matrix(self):
+        """Retrieves the payoff matrix values from the GUI fields."""
         new_matrix = {}
         for outcome, (entry_a, entry_b) in self.payoff_entries.items():
             try:
@@ -271,11 +292,10 @@ class IPDGUI(GUI):
                 entry_b.insert(0, str(b_val))
 
     def append_terminal(self, message):
+        """Appends a message to the GUI terminal"""
         self.terminal_text.insert(END, message + "\n")
         self.terminal_text.see(END)
 
     def clear_terminal(self):
+        """Clears the terminal"""
         self.terminal_text.delete(1.0, END)
-
-    def update_terminal(self, log_text):
-        pass
