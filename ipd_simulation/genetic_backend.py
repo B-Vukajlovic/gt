@@ -64,15 +64,14 @@ def make_genetic_strategy(individual):
 
 # Evaluate the performance of an algorithm
 def evaluate_individual(individual, opponents, rounds):
-    # Play against each opponent that was passed along with this function
-    # and calculate the total payoff
     individual = make_genetic_strategy(individual)
     total = 0
+    num_matches = len(opponents)
 
     for opponent in opponents.values():
         _, _, score, _ = run_match(individual, opponent, rounds)
-        total += score
-    return total
+        total += score / rounds
+    return total / num_matches
 
 
 # Select survivors based on fitness

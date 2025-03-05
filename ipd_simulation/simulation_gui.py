@@ -54,11 +54,11 @@ class IPDSimulation(Model):
             return
 
         if self.mode == "Tournament":
-            self.phase = "initial_tournament"
+            self.phase = "genetic_phase"
+            self.population = [random_individual() for _ in range(self.population_size)]
         elif self.mode == "Match":
             self.phase = "match"
 
-        self.population = None
         self.best_individual = None
         self.best_fitness = None
         if hasattr(self, 'gui') and self.gui is not None:
@@ -106,6 +106,8 @@ class IPDSimulation(Model):
                 results = run_tournament(strategies, self.rounds_per_match)
                 for name, score in results.items():
                     self.append_log(f"{name}: {score}")
+
+                self.append_log(f"Overall Best Fitness: {self.best_fitness}")
                 self.phase = "finished"
                 self.finished = True
                 return True
