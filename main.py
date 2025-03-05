@@ -8,7 +8,6 @@ init_params = {
     "rounds": 200,
     "mutation_rate": 0.1,
     "survivor_fraction": 0.3,
-    "elite_count": 5,
     "strategy_A": "Tit for Tat",
     "strategy_B": "Always Defect"
 }

@@ -19,7 +19,6 @@ class IPDSimulation(Model):
         self.make_param('num_generations', 50, int)
         self.make_param('mutation_rate', 0.1, float)
         self.make_param('survivor_fraction', 0.7, float)
-        self.make_param('elite_count', 10, int)
 
         self.make_param('strategy_A', 'Tit for Tat', str)
         self.make_param('strategy_B', 'Always Defect', str)
@@ -87,7 +86,6 @@ class IPDSimulation(Model):
                     self.rounds_per_match,
                     self.mutation_rate,
                     self.survivor_fraction,
-                    self.elite_count
                 )
                 self.population = population
                 self.append_log(f"Generation {self.current_generation}: Best Fitness = {gen_best_fitness}")
@@ -135,13 +133,13 @@ class IPDSimulation(Model):
                     self.append_log("Evolving Genetic Strategy for match against " + strat_B_name + "...")
                     opponents = { strat_B_name: strategies_for_match[strat_B_name] }
                     best_ind, best_fit = genetic_algorithm(
-                        opponents,
-                        self.population_size,
-                        self.num_generations,
-                        self.rounds_per_match,
-                        self.mutation_rate,
-                        self.survivor_fraction,
-                        self.elite_count)
+                            opponents,
+                            self.population_size,
+                            self.num_generations,
+                            self.rounds_per_match,
+                            self.mutation_rate,
+                            self.survivor_fraction,
+                        )
                     genetic_strategy = make_genetic_strategy(best_ind)
                     strategies_for_match["Genetic Strategy"] = genetic_strategy
                     self.append_log(f"Evolved Genetic Strategy with fitness {best_fit}")
@@ -149,13 +147,13 @@ class IPDSimulation(Model):
                     self.append_log("Evolving Genetic Strategy for match against " + strat_A_name + "...")
                     opponents = { strat_A_name: strategies_for_match[strat_A_name] }
                     best_ind, best_fit = genetic_algorithm(
-                        opponents,
-                        self.population_size,
-                        self.num_generations,
-                        self.rounds_per_match,
-                        self.mutation_rate,
-                        self.survivor_fraction,
-                        self.elite_count)
+                            opponents,
+                            self.population_size,
+                            self.num_generations,
+                            self.rounds_per_match,
+                            self.mutation_rate,
+                            self.survivor_fraction,
+                        )
                     genetic_strategy = make_genetic_strategy(best_ind)
                     strategies_for_match["Genetic Strategy"] = genetic_strategy
                     self.append_log(f"Evolved Genetic Strategy with fitness {best_fit}")

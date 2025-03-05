@@ -137,32 +137,34 @@ def mutate(individual, mutation_rate=0.05):
     return individual
 
 
-# Performs one step in the genetic algorithm
-def genetic_algorithm_step(population, opponents, rounds, mutation_rate, survivor_fraction, elite_count):
-    # Fitness of each individual
+def genetic_algorithm_step(population, opponents, rounds, mutation_rate, survivor_fraction):
+    # Calculate fitness for each individual
     fitnesses = [evaluate_individual(ind, opponents, rounds) for ind in population]
 
     best_individual = None
     best_fitness = float('-inf')
 
-    # Find best individual and corresponding fitness
+    # Determine the best individual
     for i in range(len(population)):
         if fitnesses[i] > best_fitness:
             best_fitness = fitnesses[i]
             best_individual = population[i]
 
-    # Make new population based on the survivor fraction and pick an elite
+    # Determine the number of survivors based on the survivor fraction
     survivor_count = int(len(population) * survivor_fraction)
     survivors = select_survivors(population, fitnesses, survivor_count)
-    new_population = survivors[:elite_count]
 
-    # Fill the rest of the spots left in the population with mutated survivors
+    # Use all survivors as the elite group (directly carried over)
+    new_population = survivors.copy()
+
+    # Fill the remainder of the population with offspring from survivors
     while len(new_population) < len(population):
         parent1 = random.choice(survivors)
         parent2 = random.choice(survivors)
         child = crossover(parent1, parent2)
         child = mutate(child, mutation_rate)
         new_population.append(child)
+
     return new_population, best_individual, best_fitness
 
 
