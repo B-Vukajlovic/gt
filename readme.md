@@ -8,7 +8,7 @@ human submitted and genetically evolved strategies. A GUI is also included.
 
 ### Simulation
 #### ipd_simulation/strategies.py
-Defines various non-genetic strategies (e.g., Tit for Tat, Grim Trigger, Random Strategy).
+Defines various non-genetic strategies (e.g. Tit for Tat, Grim Trigger, Random Strategy).
 
 #### ipd_simulation/match_tournament.py
 Implements functions for running matches and tournaments.
